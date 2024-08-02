@@ -1,0 +1,122 @@
+---
+title: "Laboratorio #1 - Isaac Cyrman (20220289)"
+output: github_document
+---
+
+# Introducción
+
+##### En este laboratorio, abordaremos varios problemas utilizando R para realizar tareas de procesamiento y análisis de datos. A lo largo de este documento, cargaremos archivos Excel, exportaremos data frames a Excel (xlsx), calcularemos la moda de vectores y leeremos un archivo de texto delimitado, explicando cada paso detalladamente.
+
+# Problema 1:
+
+##### Primero, cargamos las librerías necesarias para manejar y manipular los datos, incluyendo `readxl` para leer archivos Excel, `dplyr` para manipular data frames, `lubridate` para manejar fechas y `openxlsx` para exportar datos a excel.
+
+```{r}
+library(readxl)
+library(dplyr)
+library(lubridate) # Para manejar fechas mas fácilmente.
+library(openxlsx)
+```
+
+##### Definimos una función llamada process_file que toma como argumentos el nombre del archivo, una fecha base y el número de meses a agregar. Esta función lee el archivo Excel, calcula la fecha correspondiente, agrega una columna FECHA y selecciona las columnas específicas que nos interesan.
+
+```{r}
+# Creamos una función para agregar la columna FECHA y seleccionamos las columnas deseadas.
+process_file <- function(file_name, base_date, months_to_add) {
+  data <- read_excel(file_name)
+  # Incrementamos la fecha base en los meses correspondientes.
+  date_value <- seq.Date(base_date, by = "month", length.out = 1) + months(months_to_add - 1)
+  data <- data %>% 
+    mutate(FECHA = date_value) %>%
+    select(COD_VIAJE, CLIENTE, UBICACION, CANTIDAD, PILOTO, Q, CREDITO, UNIDAD, FECHA)
+  return(data)
+}
+```
+
+##### Usamos la función process_file para leer una serie de archivos Excel correspondientes a cada mes del año 2023. La fecha base es el 1 de enero de 2023, y para cada archivo se incrementa el mes correspondiente.
+
+```{r}
+
+# Fecha base (primer día del primer mes).
+base_date <- as.Date("2023-01-01")
+
+# Leemos archivos, agregamos la columna FECHA y seleccionamos las columnas deseadas.
+X01_2023 <- process_file("01-2023.xlsx", base_date, 1)
+X02_2023 <- process_file("02-2023.xlsx", base_date, 2)
+X03_2023 <- process_file("03-2023.xlsx", base_date, 3)
+X04_2023 <- process_file("04-2023.xlsx", base_date, 4)
+X05_2023 <- process_file("05-2023.xlsx", base_date, 5)
+X06_2023 <- process_file("06-2023.xlsx", base_date, 6)
+X07_2023 <- process_file("07-2023.xlsx", base_date, 7)
+X08_2023 <- process_file("08-2023.xlsx", base_date, 8)
+X09_2023 <- process_file("09-2023.xlsx", base_date, 9)
+X10_2023 <- process_file("10-2023.xlsx", base_date, 10)
+X11_2023 <- process_file("11-2023.xlsx", base_date, 11)
+```
+
+##### Combinamos todos los data frames resultantes en uno solo utilizando bind_rows de dplyr y mostramos el data frame combinado. El resultado de unir todos los data frames fue de 2,180 filas * 9 columnas.
+
+```{r}
+# Combinamos todos los dataframes en uno solo.
+combined_data <- bind_rows(X01_2023, X02_2023, X03_2023, X04_2023, X05_2023, X06_2023, X07_2023, X08_2023, X09_2023, X10_2023, X11_2023)
+
+# Ver el dataframe combinado.
+print(combined_data)
+```
+
+##### Exportamos el dataset conformado por todos los dataframes mediante la función write.xlsx().
+
+```{r}
+write.xlsx(combined_data, "excel_combinado.xlsx")
+```
+
+# Problema 2:
+
+##### Para este problema, definimos una función llamada moda que calcula la moda de un vector. La función encuentra los valores únicos del vector, cuenta la frecuencia de cada valor y devuelve el valor con la frecuencia más alta.
+
+```{r}
+# Definimos la función para calcular la moda
+moda <- function(x) {
+  uniq_vals <- unique(x)
+  uniq_vals[which.max(tabulate(match(x, uniq_vals)))]
+}
+```
+
+##### Creamos una lista de vectores con varios números para aplicarles la función moda.
+
+```{r}
+# Creamos una lista de vectores
+lista_vectores <- list(
+  c(1, 2, 2, 3, 3, 3, 4, 4),
+  c(5, 5, 6, 6, 7, 7, 7),
+  c(8, 9, 9, 10, 10, 10, 11)
+)
+```
+
+##### Utilizamos lapply para aplicar la función moda a cada vector en la lista y mostramos los resultados de manera agradable para el lector, indicando la moda de cada vector.
+
+```{r}
+# Utilizamos lapply para encontrar la moda de cada vector en la lista.
+modas <- lapply(lista_vectores, moda)
+
+# Mostramos los resultados de forma agradable para el usuario.
+for (i in seq_along(modas)) {
+  cat(paste("Vector #", i, ": Moda =", modas[[i]], "\n", sep = ""))
+}
+```
+
+# Problema 3:
+
+##### Para este problema, instalamos y cargamos el paquete readr para leer archivos de texto. Utilizamos read_delim para leer el archivo INE_PARQUE_VEHICULAR_080219.txt especificando el delimitador adecuado (Para este caso en especifico fue el siguiente: " | ").
+
+```{r}
+# Instalamos y cargamos el paquete readr.
+library(readr)
+
+# Leemos el archivo con read_delim especificando el delimitador adecuado.
+archivo <- "INE_PARQUE_VEHICULAR_080219.txt"
+datos <- read_delim(archivo, delim = "|")
+
+# Mostramos las primeras filas del dataframe para verificar la lectura.
+print(head(datos))
+```
