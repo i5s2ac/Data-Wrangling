@@ -22,13 +22,13 @@ Indicaciones generales:
 
 1. ¿Qué es una ufunc y por qué debemos de utilizarlas cuando programamos trabajando datos?
 
-Respuesta: 
+**Respuesta:**
 
 Una ufunc en NumPy es una función optimizada que opera elemento a elemento sobre arrays. Se suelen utilizar porque permiten realizar operaciones de forma más rápida, eficiente y sin bucles, mejorando así, el rendimiento al trabajar con grandes conjuntos de datos.
 
 2. Es una técnica en programación numérica que amplía los objetos que son de menor dimensión para que sean compatibles con los de mayor dimensión. Describa cuál es la técnica y de un breve ejemplo en R.
 
-Respuesta:
+**Respuesta:**
 
 La técnica se conoce como "broadcasting" y en programación numérica se utiliza para realizar operaciones entre objetos (como arrays o matrices) de diferentes dimensiones al expandir los de menor dimensión para que sean compatibles con los de mayor dimensión, sin duplicar datos.
 
@@ -49,7 +49,7 @@ print(resultado)
 
 3. ¿Qué es el axioma de elegibilidad y por qué es útil al momento de hacer análisis de datos? 
 
-Respuesta:
+**Respuesta:**
 
 El axioma de elegibilidad establece que en cualquier subconjunto no vacío siempre debe haber al menos una opción seleccionable como "mejor" según un criterio. Es útil en análisis de datos dado que, garantiza que al aplicar filtros o reglas de decisión siempre se podrá identificar al menos un dato relevante, evitando conjuntos vacíos y asegurando que las decisiones se basen en opciones válidas.
 
@@ -63,7 +63,7 @@ El axioma de elegibilidad establece que en cualquier subconjunto no vacío siemp
 |FR   | 4,332    |
 |ROW  | 943      |
 
-Respuesta:
+**Respuesta:**
 
 La granularidad es el nivel de detalle en los datos, mientras que la agregación es la forma de resumir esos datos al combinarlos. A mayor granularidad, más detalle hay, la agregación reduce ese detalle para simplificar el análisis.
 
@@ -97,50 +97,53 @@ paste0("Mis preguntas a resolver son: ",paste0(preguntas,collapse = ", "))
 1. Para las siguientes sentencias de `base R`, liste su contraparte de `dplyr`:
     * `str()`
     
-    Su contraparte: 
+    **Su contraparte:** 
     
 ```{r}
-glimpse(df)
+## glimpse(df)
 ```
     
     * `df[,c("a","b")]` 
     
-    Su contraparte: 
+  **Su contraparte:** 
     
 ```{r}
-df %>% select(a, b)
+## df %>% select(a, b)
 ```
     
     * `names(df)[4] <- "new_name"` donde la posición 4 corresponde a la variable `old_name` 
     
-    Su contraparte: 
+  **Su contraparte:* 
     
 ```{r}
-df %>% rename(new_name = old_name)
+## df %>% rename(new_name = old_name)
 ```
     
     * `df[df$variable == "valor",]` -> Su contraparte
     
-    Su contraparte: 
+  **Su contraparte:**
     
 ```{r}
-df %>% filter(variable == "valor")
+## df %>% filter(variable == "valor")
 ```
     
 
 2. Al momento de filtrar en SQL, ¿cuál keyword cumple las mismas funciones que el keyword `OR`  para filtrar uno o más elementos una misma columna?
 
-Respuesta: El Keyword que cumple las mismas funciones que el keyword "OR" es el keyword "IN" dado que de igual forma puede filtrar uno o más elementos en una misma columna.
+**Respuesta:** El Keyword que cumple las mismas funciones que el keyword "OR" es el keyword "IN" dado que de igual forma puede filtrar uno o más elementos en una misma columna.
 
 4. ¿Cuál es la diferencia entre utilizar `==` y `=` en R?
 
-Respuesta: El "==" se utiliza para comparar si dos valores son iguales, mientras que el "=" se usa para asignar un valor a una variable dentro de funciones o argumentos (Normalmente se suele asignar valores a una varible con "<-").
+**Respuesta:** El "==" se utiliza para comparar si dos valores son iguales, mientras que el "=" se usa para asignar un valor a una variable dentro de funciones o argumentos (Normalmente se suele asignar valores a una varible con "<-" pero como se menciona con anterioridad tambien se puede usar "=").
 
 5. ¿Cuál es la forma correcta de cargar un archivo de texto donde el delimitador es `:`?
 
+**Respuesta:**
+
+De la siguiente forma es la forma correcta...
+
 ```{r}
-# Ejemplo
-data <- read.table("archivo.txt", sep = ":", header = TRUE)
+## data <- read.table("archivo.txt", sep = ":", header = TRUE)
 ```
 
 
@@ -148,14 +151,16 @@ data <- read.table("archivo.txt", sep = ":", header = TRUE)
 
     * SELECT * FROM A _______ B ON A.KEY = B.KEY WHERE __________ = __________
     
-    Respuesta:
+    **Respuesta:**
     
     * SELECT * FROM A LEFT JOIN B ON A.KEY = B.KEY WHERE B.KEY = IS NULL
   
 Extra: ¿Cuántos posibles exámenes de 5 preguntas se pueden realizar utilizando como banco las diez acá presentadas?
 (responder con código de R.)
 
-```{r}
+**Respuesta:**
+
+```{r, cache=TRUE}
 # Se crea una función factorial
 factorial <- function(x) {
   if (x == 0) return(1)
@@ -201,14 +206,15 @@ B. Estrategia de negocio ha decidido que ya no operará en aquellos territorios 
 
 Inicializamos, importando los paquetes necesarios que requerimos para poder realizar el análisis.
 
-```{r}
+```{r, cache=TRUE}
 library(dplyr)
 library(ggplot2)
+parcial_anonimo <- readRDS("parcial_anonimo.rds")
 ```
 
 Antes de responder a la pregunta, requerimos de saber que clientes se encuentran operando en más de un país.
 
-```{r }
+```{r, cache=TRUE}
 # Agrupar por cliente y pais, luego filtrar clientes que operan en más de un país
 clientes_multiples_paises <- parcial_anonimo %>%
   group_by(Cliente) %>%
@@ -220,7 +226,7 @@ clientes_multiples_paises
 
 Seguidamente, procedemos a unir la tabla original con los clientes filtrados mediante un inner_join() a fin de contar con los datos completos relacionados a los clientes que operan en más de un país.
 
-```{r}
+```{r, cache=TRUE}
 # Unir la tabla original con los clientes filtrados
 parcial_anonimo_filtrado <- parcial_anonimo %>%
   inner_join(clientes_multiples_paises, by = "Cliente")
@@ -228,7 +234,7 @@ parcial_anonimo_filtrado <- parcial_anonimo %>%
 
 Calculamos a partir de agrupar los clientes, la rentabilidad total y el porcentaje que representa sobre el total de las ventas.
 
-```{r}
+```{r, cache=TRUE}
 rentabilidad_clientes <- parcial_anonimo_filtrado %>%
   group_by(Cliente) %>%
   summarise(rentabilidad_total = sum(Venta, na.rm = TRUE)) %>%
@@ -240,7 +246,7 @@ rentabilidad_clientes
 
 Para entender mejor la data, procedemos a mostrar graficamente mediante un bar plot sobre el ingreso total que representa cada uno de los clientes.
 
-```{r}
+```{r, cache=TRUE}
 #Barplot usando ggplot2()
 ggplot(rentabilidad_clientes, aes(x = Cliente, y = rentabilidad_total, fill = Cliente)) +
   geom_bar(stat = "identity") +
@@ -253,15 +259,18 @@ ggplot(rentabilidad_clientes, aes(x = Cliente, y = rentabilidad_total, fill = Cl
 
 A partir de todo lo hecho con anterioridad, se puede concluir que de los clientes que estan en más de un país, el más rentable es: Cliente (a17a7558) con una rentabilidad total de 19817.7, lo cual, representa un 31.7% sobre el total de ventas de la compañia.
 
-```{r}
+```{r, cache=TRUE}
 cliente_mas_rentable <- rentabilidad_clientes %>%
   top_n(1, rentabilidad_total)
 
 cliente_mas_rentable
 ```
+
 ## B
 
-```{r }
+Inicialmente para nuestro análisis, se puede concluir que no se encontró ningún territorio que cuente con pérdidasen una perspectiva global (Cuando nos refirimos a perdidas es que ninguna empresa esta por debajo del punto de equilibrio, es decir, 0).
+
+```{r, cache=TRUE}
 ###resuelva acá
 Territorios_con_perdida <- parcial_anonimo %>%
   group_by(Territorio) %>%
@@ -269,5 +278,37 @@ Territorios_con_perdida <- parcial_anonimo %>%
   filter(Rentabilidad <= 0) 
 
 Territorios_con_perdida
+```
+
+Dentro de todos los rentables (Bajo la lógica que estan por encima del punto de equilibrio), contamos con unos más y otros menos rentables. Entre ellos, podemos concluir que el territorio menos rentable es el "e6fd9da9", ahora bien bajo el criterio de los menos rentables son los que estan por debajo de 1000 y esos son los que deberiamos de cerrar (Se pueden observar en la gráfica de barras).
+
+```{r, cache=TRUE}
+
+library(dplyr)
+library(ggplot2)
+
+# Agrupar por Territorio y sumar las ventas para cada uno
+territorios_rentabilidad <- parcial_anonimo %>%
+  group_by(Territorio) %>%
+  summarise(total_venta = sum(Venta, na.rm = TRUE)) %>%
+  arrange(total_venta)  # Ordenar de menor a mayor rentabilidad
+
+# Filtrar los territorios con una rentabilidad menor a 1000
+territorios_con_baja_rentabilidad <- territorios_rentabilidad %>%
+  filter(total_venta < 1000)
+
+# Ver los territorios con baja rentabilidad
+territorios_con_baja_rentabilidad
+
+# Crear un gráfico de barras para mostrar los territorios con baja rentabilidad
+ggplot(territorios_con_baja_rentabilidad, aes(x = reorder(Territorio, total_venta), y = total_venta, fill = Territorio)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Territorios con rentabilidad menor a 1000",
+       x = "Territorio",
+       y = "Rentabilidad Total") +
+  theme_minimal() +
+  coord_flip()  # Para que las etiquetas se vean mejor
+
+
 ```
 
