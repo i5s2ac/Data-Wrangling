@@ -1,0 +1,122 @@
+---
+title: "Lubridate Lab"
+author: "Tepi"
+date: "10/6/2024"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Laboratorio de la libreria Lubridate
+
+```{r, cache=TRUE, echo=TRUE, message=FALSE}
+# cargar librerias
+library(nycflights13)
+library(lubridate)
+library(dplyr)
+```
+
+## Resuelva las siguientes preguntas: 
+
+### Ejercicio 1: Convertir columnas de hora en fecha-hora
+
+Problema: Convierte las columnas dep_time (hora de salida) y arr_time (hora de llegada) en objetos de tipo datetime usando make_datetime() de lubridate. Recuerda que estas columnas están en formato militar (HHMM).
+
+Ayuda: Investiga la funcion matematica de modulo de r.
+
+```{r}
+# Cargar el dataset de vuelos
+flights <- nycflights13::flights
+
+# Crear una función para convertir la hora en formato HHMM a datetime
+convert_to_datetime <- function(year, month, day, time) {
+  hours <- time %/% 100 # División entera para obtener las horas
+  minutes <- time %% 100 # Resto para obtener los minutos
+  make_datetime(year, month, day, hours, minutes)
+}
+
+# Aplicar la función a las columnas dep_time y arr_time
+flights <- flights %>%
+  mutate(
+    dep_datetime = convert_to_datetime(year, month, day, dep_time),
+    arr_datetime = convert_to_datetime(year, month, day, arr_time)
+  )
+
+# Mostrar las primeras filas para verificar la conversión
+head(flights[, c("dep_time", "dep_datetime", "arr_time", "arr_datetime")])
+
+```
+
+
+
+
+## Ejercicio 2: Duracion del vuelo
+
+Calcula el tiempo de vuelo total en minutos entre las columnas dep_time y arr_time que calculaste en el primer Ejercicio.
+
+```{r}
+# Calcular el tiempo de vuelo en minutos
+flights <- flights %>%
+  mutate(
+    flight_duration = as.numeric(difftime(arr_datetime, dep_datetime, units = "mins"))
+  )
+
+# Mostrar las primeras filas para verificar la duración del vuelo
+head(flights[, c("dep_datetime", "arr_datetime", "flight_duration")])
+```
+
+
+## Ejercicio 3: Extraer componentes de fechas
+
+Extrae el dia de la semana y la hora en que salieron los aviones y guardalos en las variables `dep_day_of_week` y `dep_hour`.
+
+```{r}
+# Extraer el día de la semana y la hora de salida
+flights <- flights %>%
+  mutate(
+    dep_day_of_week = wday(dep_datetime, label = TRUE, abbr = TRUE), # Día de la semana
+    dep_hour = hour(dep_datetime) # Hora de salida
+  )
+
+# Mostrar las primeras filas para verificar las nuevas variables
+head(flights[, c("dep_datetime", "dep_day_of_week", "dep_hour")])
+```
+
+## Ejercicio 4: Crear nuevas columnas con el día de la semana y la semana del año
+
+Problema: Usando la columna `time_hour`, crea una nueva columna que indique el día de la semana y otra que indique la semana del año en la que ocurrió el vuelo.
+
+Ayuda: Invesitga la funcion wday de lubridate.
+
+```{r}
+# Crear nuevas columnas para el día de la semana y la semana del año
+flights <- flights %>%
+  mutate(
+    day_of_week = wday(time_hour, label = TRUE, abbr = TRUE),  # Día de la semana
+    week_of_year = week(time_hour)  # Semana del año
+  )
+
+# Mostrar las primeras filas para verificar las nuevas columnas
+head(flights[, c("time_hour", "day_of_week", "week_of_year")])
+```
+
+## Ejercicio 5: Encontrar los vuelos que salieron los fines de semana
+
+Problema: Filtra los vuelos que despegaron un sábado o domingo y devuelve el total de vuelos en fines de semana.
+
+```{r}
+# Filtrar vuelos que salieron en fin de semana
+weekend_flights <- flights %>%
+  filter(day_of_week %in% c("Sat", "Sun"))
+
+# Contar el total de vuelos en fines de semana
+total_weekend_flights <- nrow(weekend_flights)
+
+# Mostrar el total de vuelos en fines de semana
+total_weekend_flights
+```
+
+
+
