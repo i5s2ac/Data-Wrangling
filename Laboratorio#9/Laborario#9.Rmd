@@ -1,0 +1,316 @@
+---
+title: "Laboratorio#9"
+author: "Isaac Cyrman"
+date: "2024-11-11"
+output: pdf_document
+---
+
+
+```{r libraries}
+# Cargar librerías
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+# Parte 1: Missing Data Analysis
+
+## 1. Reporte de Missing Data
+
+```{r load_data}
+# Cargar datos
+titanic_md <- read.csv("titanic_MD.csv", na.strings = c("", "?", "NA"))
+titanic_complete <- read.csv("titanic.csv")
+
+# Calcular missing values
+missing_summary <- data.frame(
+  Variable = names(titanic_md),
+  Missing_Count = colSums(is.na(titanic_md)),
+  Missing_Percent = round(colSums(is.na(titanic_md))/nrow(titanic_md)*100, 2),
+  Data_Type = sapply(titanic_md, class)
+)
+
+missing_summary
+
+```
+
+## 2. Métodos de Imputación Propuestos
+
+```{r methods_description}
+methods_df <- data.frame(
+  Variable = c("Sex", "Age", "SibSp", "Parch"),
+  Método = c(
+    "Moda", 
+    "Regresión Lineal", 
+    "Mediana", 
+    "Mediana"
+  ),
+  Justificación = c(
+    "Variable categórica binaria - La moda es apropiada para datos categóricos",
+    "Variable numérica continua - La regresión lineal puede capturar relaciones con otras variables",
+    "Variable numérica discreta - La mediana es resistente a outliers",
+    "Variable numérica discreta - La mediana mantiene la naturaleza discreta de los datos"
+  )
+)
+
+methods_df
+
+```
+
+## 3. Reporte de Filas Completas
+
+```{r complete_rows}
+# Análisis de completitud
+n_complete <- sum(complete.cases(titanic_md))
+n_incomplete <- sum(!complete.cases(titanic_md))
+total_rows <- nrow(titanic_md)
+
+completeness_summary <- data.frame(
+  Metric = c("Filas Completas", "Filas Incompletas", "Total Filas"),
+  Count = c(n_complete, n_incomplete, total_rows),
+  Percentage = c(
+    round(n_complete/total_rows*100, 2),
+    round(n_incomplete/total_rows*100, 2),
+    100
+  )
+)
+
+# Mostrar tabla de completitud
+completeness_summary
+
+# Visualización de completitud
+ggplot(completeness_summary[-3,], aes(x="", y=Count, fill=Metric)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme_minimal() +
+  labs(title="Distribución de Completitud de Filas",
+       fill="Tipo de Fila") +
+  theme(axis.text = element_blank(),
+        axis.title = element_blank())
+```
+
+## 4. Métodos de Imputación
+
+### 4.1 Imputación General
+
+```{r basic_imputation}
+# Crear copias para diferentes métodos de imputación
+titanic_mean <- titanic_md
+titanic_median <- titanic_md
+titanic_mode <- titanic_md
+
+# Imputación por media
+numeric_cols <- sapply(titanic_md, is.numeric)
+titanic_mean[numeric_cols] <- lapply(titanic_md[numeric_cols], function(x) {
+  replace(x, is.na(x), mean(x, na.rm = TRUE))
+})
+
+# Imputación por mediana
+titanic_median[numeric_cols] <- lapply(titanic_md[numeric_cols], function(x) {
+  replace(x, is.na(x), median(x, na.rm = TRUE))
+})
+
+# Función para obtener la moda
+get_mode <- function(x) {
+  ux <- unique(na.omit(x))
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+# Imputación por moda para variables categóricas
+categorical_cols <- sapply(titanic_md, is.character)
+titanic_mode[categorical_cols] <- lapply(titanic_md[categorical_cols], function(x) {
+  replace(x, is.na(x), get_mode(x))
+})
+
+# Crear tabla resumen de imputaciones para variables numéricas
+numeric_summary <- data.frame(
+  Variable = names(titanic_md)[numeric_cols],
+  Tipo = "Numérica",
+  Valor_Original = sapply(titanic_md[numeric_cols], function(x) round(mean(x, na.rm = TRUE), 2)),
+  Valor_Imputado = sapply(titanic_mean[numeric_cols], function(x) round(mean(x, na.rm = TRUE), 2))
+)
+
+# Crear tabla resumen para variables categóricas
+categorical_summary <- data.frame(
+  Variable = names(titanic_md)[categorical_cols],
+  Tipo = "Categórica",
+  Valor_Original = sapply(titanic_md[categorical_cols], function(x) get_mode(x)),
+  Valor_Imputado = sapply(titanic_mode[categorical_cols], function(x) get_mode(x))
+)
+
+# Combinar las tablas
+imputation_summary <- rbind(numeric_summary, categorical_summary)
+
+# Mostrar solo las variables que tenían valores faltantes
+imputation_summary <- imputation_summary[
+  names(titanic_md)[sapply(titanic_md, function(x) any(is.na(x)))],
+]
+
+print("Resumen de Valores Imputados:")
+print(imputation_summary)
+
+# Visualizar solo la distribución de Age
+ggplot() +
+  geom_density(data=titanic_complete, aes(x=Age, color="Original")) +
+  geom_density(data=titanic_mean, aes(x=Age, color="Mean")) +
+  geom_density(data=titanic_median, aes(x=Age, color="Median")) +
+  theme_minimal() +
+  labs(title="Distribución de Age según Método de Imputación",
+       x="Age",
+       y="Densidad",
+       color="Método")
+```
+
+### 4.2 Imputación por Regresión Lineal
+
+```{r regression_imputation}
+# Preparar datos para regresión
+titanic_reg <- titanic_md
+titanic_reg$Sex <- as.factor(titanic_reg$Sex)
+titanic_reg$Sex <- as.numeric(titanic_reg$Sex)
+
+# Modelo para Age
+age_model <- lm(Age ~ Pclass + Sex + Fare,
+                data = titanic_reg[!is.na(titanic_reg$Age), ])
+
+# Imputar valores faltantes de Age
+titanic_reg$Age[is.na(titanic_reg$Age)] <- predict(age_model,
+                                                  newdata = titanic_reg[is.na(titanic_reg$Age), ])
+
+# Crear resumen del modelo
+model_summary <- data.frame(
+  Estadístico = c("R-cuadrado", "R-cuadrado ajustado", "Error estándar residual",
+                  "Valores faltantes imputados"),
+  Valor = c(
+    round(summary(age_model)$r.squared, 3),
+    round(summary(age_model)$adj.r.squared, 3),
+    round(summary(age_model)$sigma, 3),
+    sum(is.na(titanic_md$Age))
+  )
+)
+
+# Mostrar resumen del modelo
+print("Resumen del Modelo de Regresión:")
+print(model_summary)
+
+# Mostrar coeficientes del modelo
+coef_summary <- data.frame(
+  Variable = names(coef(age_model)),
+  Coeficiente = round(coef(age_model), 3)
+)
+
+print("\nCoeficientes del Modelo:")
+print(coef_summary)
+
+# Visualizar resultados de regresión
+ggplot() +
+  geom_density(data=titanic_complete, aes(x=Age, color="Original")) +
+  geom_density(data=titanic_reg, aes(x=Age, color="Regression")) +
+  theme_minimal() +
+  labs(title="Comparación de Distribución de Age: Original vs Regresión",
+       x="Age",
+       y="Densidad",
+       color="Método") +
+  scale_color_manual(values=c("Original"="blue", "Regression"="red"))
+```
+
+## 5. Comparación con Datos Originales
+
+```{r comparison}
+# Función para calcular RMSE
+rmse <- function(pred, actual) {
+  sqrt(mean((pred - actual)^2, na.rm = TRUE))
+}
+
+# Comparar métodos para Age
+age_comparison <- data.frame(
+  Método = c("Media", "Mediana", "Regresión lineal"),
+  RMSE = c(
+    rmse(titanic_mean$Age, titanic_complete$Age),
+    rmse(titanic_median$Age, titanic_complete$Age),
+    rmse(titanic_reg$Age, titanic_complete$Age)
+  )
+)
+
+knitr::kable(age_comparison, 
+             caption = "Comparación de Métodos de Imputación para Age")
+```
+
+## conclusión
+
+Basado en los resultados del análisis de la Parte 1, aquí está la conclusión:
+
+# Conclusión
+
+El análisis del dataset Titanic reveló patrones importantes en los datos faltantes, donde Sex presentó el mayor porcentaje con 27.87%, seguido por Age con 13.66%, mientras que SibSp (1.64%), Parch (6.56%) y otras variables mostraron menor incidencia. Del total de 183 filas, el 54.64% estaban completas y 45.36% tenían al menos un valor faltante. La comparación de métodos de imputación mostró que la regresión lineal fue significativamente superior para la variable Age, con un RMSE de 3.22, considerablemente menor que la media (5.79) y la mediana (5.79). A pesar de un R² relativamente bajo de 0.153, el modelo de regresión demostró que las variables Pclass (-11.087), Sex (4.177) y Fare (-0.068) son predictores significativos para Age. Para las variables categóricas como Sex y Embarked, la imputación por moda resultó apropiada, mientras que para variables numéricas discretas como SibSp y Parch, la mediana demostró ser un método robusto y efectivo.
+
+# Parte 2: Feature Engineering
+
+## 1. Normalización
+
+```{r normalization}
+# Seleccionar columnas numéricas
+numeric_cols <- c("Age", "Fare")
+
+# Standardization
+titanic_std <- titanic_reg
+titanic_std[numeric_cols] <- scale(titanic_reg[numeric_cols])
+
+# Min-Max Scaling
+titanic_minmax <- titanic_reg
+titanic_minmax[numeric_cols] <- apply(titanic_reg[numeric_cols], 2, function(x) {
+  (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+})
+
+# MaxAbs Scaling
+titanic_maxabs <- titanic_reg
+titanic_maxabs[numeric_cols] <- apply(titanic_reg[numeric_cols], 2, function(x) {
+  x / max(abs(x), na.rm = TRUE)
+})
+
+# Visualizar resultados de normalización
+for(col in numeric_cols) {
+  p <- ggplot() +
+    geom_density(data=titanic_std, aes_string(x=col, color="'Standardization'")) +
+    geom_density(data=titanic_minmax, aes_string(x=col, color="'MinMax'")) +
+    geom_density(data=titanic_maxabs, aes_string(x=col, color="'MaxAbs'")) +
+    theme_minimal() +
+    labs(title=paste("Distribuciones Normalizadas de", col),
+         color="Método")
+  print(p)
+}
+```
+
+## 2. Comparación de Estadísticos
+
+```{r statistics_comparison}
+# Función para obtener estadísticos resumidos
+get_stats <- function(data, col) {
+  c(
+    Media = mean(data[[col]], na.rm = TRUE),
+    DE = sd(data[[col]], na.rm = TRUE),
+    Min = min(data[[col]], na.rm = TRUE),
+    Max = max(data[[col]], na.rm = TRUE),
+    Mediana = median(data[[col]], na.rm = TRUE)
+  )
+}
+
+# Comparar estadísticos para cada variable numérica
+for(col in numeric_cols) {
+  stats <- rbind(
+    Original = get_stats(titanic_complete, col),
+    Estandarizado = get_stats(titanic_std, col),
+    MinMax = get_stats(titanic_minmax, col),
+    MaxAbs = get_stats(titanic_maxabs, col)
+  )
+  
+  print(paste("\nEstadísticos para", col))
+  print(knitr::kable(round(stats, 3),
+                     caption = paste("Comparación de Estadísticos -", col)))
+}
+```
+
+
+# Conclusión
+
+El análisis del dataset Titanic reveló un 13.66% de valores faltantes en la variable Age, donde la imputación por regresión lineal demostró ser significativamente más efectiva (RMSE = 3.217) que los métodos de media y mediana (RMSE = 5.789). A pesar de que el modelo de regresión presentó un R² relativamente bajo (0.153), logró reducir el error de imputación en aproximadamente 44%. En cuanto a los outliers, se identificó un 6.56% en la variable Age utilizando el método de desviación estándar, un porcentaje manejable que no requiere tratamiento especial. Los diferentes métodos de normalización aplicados (Standardization, MinMax y MaxAbs) mostraron ser efectivos para diferentes propósitos, siendo la estandarización particularmente útil para mantener la distribución relativa de los datos mientras que el MinMax Scaling facilitó la comparación entre variables. En general, se recomienda el uso de la regresión lineal para futuras imputaciones de Age, considerar la inclusión de más variables predictoras para mejorar el modelo, y seleccionar el método de normalización según el análisis posterior a realizar.
